@@ -13,8 +13,8 @@ if (typeof AFRAME === 'undefined') {
 AFRAME.registerComponent('plot', {
     
     schema: {
-        'formula': {'type': 'string', 'default': '(x^2 + y^2)/4)'},
-        'order': {'type': 'number', 'default': 64},
+        'function': {'type': 'string', 'default': '0'},
+        'order': {'type': 'number', 'default': 32},
         'label_text': {'type': 'string', 'default': ''},
         'show_formula': {'type': 'boolean', 'default': false},
         'show_axes': {'type': 'boolean', 'default': true},
@@ -32,7 +32,7 @@ AFRAME.registerComponent('plot', {
     * Called once when component is attached. Generally for initial setup.
     */
     init: function() {
-        var code = math.compile(this.data.formula);
+        var code = math.compile(this.data.function);
         var F = function(i, j) {
             var scope = {'x': i, 'y': j};
             return code.eval(scope);
