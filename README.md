@@ -3,6 +3,8 @@
 [![Version](http://img.shields.io/npm/v/aframe-plot-component.svg?style=flat-square)](https://npmjs.org/package/aframe-plot-component)
 [![License](http://img.shields.io/npm/l/aframe-plot-component.svg?style=flat-square)](https://npmjs.org/package/aframe-plot-component)
 
+![Plot thumbnail large](aframe-plot-component.png)
+
 Renders 3D plots of functions and data
 
 For [A-Frame](https://aframe.io).
