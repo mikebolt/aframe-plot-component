@@ -180,20 +180,24 @@ function createGraphObject(valueFunction, order, bounds) {
     
     var values = [];
     
+    const iRange = bounds[1] - bounds[0];
+    const jRange = bounds[5] - bounds[4];
+    
     for (var i = 0; i < order; ++i) {
+        var iCoordinate = bounds[0] + i * iRange / (order - 1);
         var valueRow = [];
         for (var j = 0; j < order; ++j) {
-            var value = valueFunction(i / (order - 1.0) - 0.5, j / (order - 1.0) - 0.5);
+            var jCoordinate = bounds[4] + j * jRange / (order - 1);
+            var value = valueFunction(iCoordinate, jCoordinate);
             valueRow.push(value);
         }
         values.push(valueRow);
     }
     
-    var geometry = new GraphBufferGeometry(1.0, order, values);
-    var material = new THREE.MeshLambertMaterial("0xFFFFFF");
+    var geometry = new GraphBufferGeometry(order, bounds, values);
+    var material = new THREE.MeshLambertMaterial({color: 0xFFFFFF});
     material.side = THREE.DoubleSide;
     var result = new THREE.Mesh(geometry, material);
     return result;
-    
-    // TODO: BOUNDS
+
 }

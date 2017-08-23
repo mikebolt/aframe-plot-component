@@ -226,17 +226,22 @@
 	    
 	    var values = [];
 	    
+	    const iRange = bounds[1] - bounds[0];
+	    const jRange = bounds[5] - bounds[4];
+	    
 	    for (var i = 0; i < order; ++i) {
+	        var iCoordinate = bounds[0] + i * iRange / (order - 1);
 	        var valueRow = [];
 	        for (var j = 0; j < order; ++j) {
-	            var value = valueFunction(i / (order - 1.0) - 0.5, j / (order - 1.0) - 0.5);
+	            var jCoordinate = bounds[4] + j * jRange / (order - 1);
+	            var value = valueFunction(iCoordinate, jCoordinate);
 	            valueRow.push(value);
 	        }
 	        values.push(valueRow);
 	    }
 	    
-	    var geometry = new GraphBufferGeometry(1.0, order, values);
-	    var material = new THREE.MeshLambertMaterial("0xFFFFFF");
+	    var geometry = new GraphBufferGeometry(order, bounds, values);
+	    var material = new THREE.MeshLambertMaterial({color: 0xFFFFFF});
 	    material.side = THREE.DoubleSide;
 	    var result = new THREE.Mesh(geometry, material);
 	    return result;
@@ -309,10 +314,8 @@
 /* 2 */
 /***/ (function(module, exports) {
 
-	function GraphBufferGeometry(size, order, values) {
+	function GraphBufferGeometry(order, bounds, values) {
 	    this.order = order;
-	    this.size = size;
-	    var cellSize = size / order;
 	    
 	    this.values = values;
 	    
@@ -346,18 +349,24 @@
 	        return cross;
 	    }
 	    
+	    const xRange = bounds[1] - bounds[0];
+	    const zRange = bounds[5] - bounds[4];
+	    const xStep = xRange / (order - 1);
+	    const zStep = zRange / (order - 1);
+	    
 	    for (var i = 0; i < order - 1; ++i) {
+	        var x = bounds[0] + i * xStep;
+	        
 	        for (var j = 0; j < order - 1; ++j) {
-	            var x = cellSize * (i - order / 2);
-	            var z = cellSize * (j - order / 2);
+	            var z = bounds[4] + j * zStep;
 	            
 	            var value = values[i][j];
 	            var valuePlusX = values[i + 1][j];
 	            var valuePlusZ = values[i][j + 1];
 	            var valuePlusXZ = values[i + 1][j + 1];
 	            
-	            var A = new THREE.Vector3(x, valuePlusZ, z + cellSize);
-	            var B = new THREE.Vector3(x + cellSize, valuePlusX, z);
+	            var A = new THREE.Vector3(x, valuePlusZ, z + zStep);
+	            var B = new THREE.Vector3(x + xStep, valuePlusX, z);
 	            var C = new THREE.Vector3(x, value, z);
 	            
 	            var normal = getNormalVector(A, B, C);
@@ -366,9 +375,9 @@
 	            addVertex(B); addNormal(normal);
 	            addVertex(C); addNormal(normal);
 	            
-	            A = new THREE.Vector3(x + cellSize, valuePlusX, z);
-	            B = new THREE.Vector3(x, valuePlusZ, z + cellSize);
-	            C = new THREE.Vector3(x + cellSize, valuePlusXZ, z + cellSize);
+	            A = new THREE.Vector3(x + xStep, valuePlusX, z);
+	            B = new THREE.Vector3(x, valuePlusZ, z + zStep);
+	            C = new THREE.Vector3(x + xStep, valuePlusXZ, z + zStep);
 
 	            normal = getNormalVector(A, B, C);
 	            

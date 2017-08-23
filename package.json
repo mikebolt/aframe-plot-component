@@ -1,6 +1,6 @@
 {
   "name": "aframe-plot-component",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Renders 3D plots of functions and data",
   "main": "index.js",
   "cdn": "dist/aframe-plot-component.min.js",
