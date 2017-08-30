@@ -18,12 +18,12 @@
                 position="-0.75 1 -2" rotation="0 90 0">
       </a-entity>
       
-      <a-entity plot="function: 0.5*e^-(((x^2)/(1.1+sin(2*pi*t))+(y^2)/(1.1+cos(2*pi*t)))*10); order: 32; show_zero_planes: true; show_bounding_box: false; bounds: -0.5 0.5 0 0.5 -0.5 0.5; color: #F40;"
+      <a-entity plot="function: 0.5*e^-((x^2+y^2)*10); order: 32; show_zero_planes: true; show_bounding_box: false; bounds: -0.5 0.5 0 0.5 -0.5 0.5; color: #F40;"
                 position="0.75 1 -2" rotation="0 90 0">
       </a-entity>
 
       <a-plane src="#groundTexture" rotation="-90 0 0" height="100" width="100"></a-plane>
-      <a-light type="ambient" color="#445451"></a-light>
+      <!--<a-light type="ambient" color="#445451"></a-light>-->
       <a-light type="point" intensity="2" position="2 4 4"></a-light>
       <a-sky height="2048" radius="30" src="#skyTexture" theta-length="90" width="2048"></a-sky>
     </a-scene>
