@@ -92,7 +92,7 @@ function GraphBufferGeometry(order, bounds, values, uScale, vScale) {
     
     this.addAttribute('position', new THREE.BufferAttribute(vertices, 3).onUpload(freeAttributeArray));
     this.addAttribute('uv', new THREE.BufferAttribute(uvs, 2).onUpload(freeAttributeArray));
-    //this.computeVertexNormals();
+    this.computeVertexNormals();
 }
 
 GraphBufferGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
