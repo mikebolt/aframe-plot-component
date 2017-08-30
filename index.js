@@ -1,6 +1,9 @@
 const math = require('./math.js');
 const GraphBufferGeometry = require('./GraphBufferGeometry.js');
 
+const plotTexture = new THREE.TextureLoader().load('../../grid_64.png');
+plotTexture.wrapS = plotTexture.wrapT = THREE.RepeatWrapping;
+
 /* global AFRAME */
 
 if (typeof AFRAME === 'undefined') {
@@ -20,7 +23,12 @@ AFRAME.registerComponent('plot', {
         'show_axes': {'type': 'boolean', 'default': true},
         'bounds': {'type': 'string', 'default': '-1 1 -1 1 -1 1'},
         'show_zero_planes': {'type': 'boolean', 'default': false},
-        'show_bounding_box': {'type': 'boolean', 'default': false}
+        'show_bounding_box': {'type': 'boolean', 'default': false},
+        'show_grid': {'type': 'boolean', 'default': true}, // TODO
+        'grix_x_scale': {'type': 'number', 'default': 0.1}, // TODO
+        'grid_z_scale': {'type': 'number', 'default': 0.1}, // TODO
+        'color': {'type': 'string', 'default': '#AAA'},
+        'animate': {'type': 'boolean', 'default': false}
     },
     
     /**
@@ -33,16 +41,22 @@ AFRAME.registerComponent('plot', {
     */
     init: function() {
         var code = math.compile(this.data.function);
-        var F = function(i, j) {
-            var scope = {'x': i, 'y': j};
+        var scope = {t: 0.0};
+        this.scope = scope;
+        this.F = function(i, j) {
+            scope.x = i;
+            scope.y = j;
             return code.eval(scope);
         };
         
+        console.log(this.data);
+        
         var root = new THREE.Object3D();
+        this.root = root;
         
         // TODO: make this more robust with format checking
         // [-x, +x, -y, +y, -z, +z]
-        var bounds = this.data.bounds.split(' ').map(function(x) {
+        this.bounds = this.data.bounds.split(' ').map(function(x) {
             return parseFloat(x);
         });
         
@@ -53,20 +67,30 @@ AFRAME.registerComponent('plot', {
         }
         
         if (this.data.show_zero_planes === true) {
-            var zeroPlanes = makeZeroPlanes(bounds);
+            var zeroPlanes = makeZeroPlanes(this.bounds);
             root.add(zeroPlanes);
         }
         
         if (this.data.show_bounding_box === true) {
-            var boundingBox = makeBoundingBox(bounds);
+            var boundingBox = makeBoundingBox(this.bounds);
             root.add(boundingBox);
         }
         
-        var graphObject = createGraphObject(F, this.data.order, bounds);
-        root.add(graphObject);
-        
+        this.graphObject = null;
+        this.createPlot();
         this.el.setObject3D('mesh', root);
-    }
+    },
+    
+    createPlot: function() {
+        if (this.graphObject !== null) {
+            this.root.remove(this.graphObject);
+        }
+        
+        this.graphObject = createGraphObject(this.F, this.data.order, this.bounds,
+                this.data.color, this.data.grid_x_scale, this.data.grid_y_scale,
+                this.data.show_grid);
+        this.root.add(this.graphObject);
+    },
 
     /**
     * Called when component is attached and when component data changes.
@@ -83,7 +107,12 @@ AFRAME.registerComponent('plot', {
     /**
     * Called on each scene tick.
     */
-    // tick: function (t) { },
+    tick: function (t) {
+        if (this.data.animate) {
+            this.scope.t = (t % 1000) / 1000;
+            this.createPlot();
+        }
+    },
 
     /**
     * Called when entity pauses.
@@ -176,7 +205,7 @@ function makeBoundingBox(bounds) {
     return boundingBox;
 }
 
-function createGraphObject(valueFunction, order, bounds) {
+function createGraphObject(valueFunction, order, bounds, color, gridXScale, gridZScale, showGrid) {
     
     var values = [];
     
@@ -194,8 +223,14 @@ function createGraphObject(valueFunction, order, bounds) {
         values.push(valueRow);
     }
     
-    var geometry = new GraphBufferGeometry(order, bounds, values);
-    var material = new THREE.MeshLambertMaterial({color: 0xFFFFFF});
+    var geometry = new GraphBufferGeometry(order, bounds, values, gridXScale, gridZScale);
+    
+    const materialProperties = {color: new THREE.Color(color)};
+    //if (showGrid) {
+    //    materialProperties.map = plotTexture;
+    //}
+    var material = new THREE.MeshLambertMaterial(materialProperties);
+    
     material.side = THREE.DoubleSide;
     var result = new THREE.Mesh(geometry, material);
     return result;

@@ -1,4 +1,7 @@
-function GraphBufferGeometry(order, bounds, values) {
+function GraphBufferGeometry(order, bounds, values, uScale, vScale) {
+    
+    THREE.BufferGeometry.call(this);
+    
     this.order = order;
     
     this.values = values;
@@ -9,9 +12,17 @@ function GraphBufferGeometry(order, bounds, values) {
     
     var vertices = new Float32Array(numFloats);
     var normals = new Float32Array(numFloats);
+    var uvs = new Float32Array(numVertices * 2);
     
     var faceIndex = 0;
     var normalIndex = 0;
+    var uvIndex = 0;
+    
+    function addValues(vertex, normal, i, j) {
+        addVertex(vertex);
+        addNormal(normal);
+        addUV(vertex.x, vertex.z);
+    }
     
     function addVertex(V) {
         vertices[faceIndex++] = V.x;
@@ -23,6 +34,11 @@ function GraphBufferGeometry(order, bounds, values) {
         normals[normalIndex++] = N.x;
         normals[normalIndex++] = N.y;
         normals[normalIndex++] = N.z;
+    }
+    
+    function addUV(x, z) {
+        uvs[uvIndex++] = x / uScale;
+        uvs[uvIndex++] = z / vScale;
     }
     
     function getNormalVector(A, B, C) {
@@ -55,9 +71,9 @@ function GraphBufferGeometry(order, bounds, values) {
             
             var normal = getNormalVector(A, B, C);
             
-            addVertex(A); addNormal(normal);
-            addVertex(B); addNormal(normal);
-            addVertex(C); addNormal(normal);
+            addValues(A, normal, i, j + 1);
+            addValues(B, normal, i + 1, j);
+            addValues(C, normal, i, j);
             
             A = new THREE.Vector3(x + xStep, valuePlusX, z);
             B = new THREE.Vector3(x, valuePlusZ, z + zStep);
@@ -65,18 +81,21 @@ function GraphBufferGeometry(order, bounds, values) {
 
             normal = getNormalVector(A, B, C);
             
-            addVertex(A); addNormal(normal);
-            addVertex(B); addNormal(normal);
-            addVertex(C); addNormal(normal);
+            addValues(A, normal, i + 1, j);
+            addValues(B, normal, i, j + 1);
+            addValues(C, normal, i + 1, j + 1);
+            
         }
     }
     
     function freeAttributeArray() { this.array = null; }
     
     this.addAttribute('position', new THREE.BufferAttribute(vertices, 3).onUpload(freeAttributeArray));
-    this.computeVertexNormals();
+    this.addAttribute('uv', new THREE.BufferAttribute(uvs, 2).onUpload(freeAttributeArray));
+    //this.computeVertexNormals();
 }
 
-GraphBufferGeometry.prototype = new THREE.BufferGeometry();
+GraphBufferGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
+GraphBufferGeometry.prototype.constructor = GraphBufferGeometry;
 
 module.exports = GraphBufferGeometry;
