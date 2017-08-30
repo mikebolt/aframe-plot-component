@@ -1,9 +1,6 @@
 const math = require('./math.js');
 const GraphBufferGeometry = require('./GraphBufferGeometry.js');
 
-const plotTexture = new THREE.TextureLoader().load('../../grid_64.png');
-plotTexture.wrapS = plotTexture.wrapT = THREE.RepeatWrapping;
-
 /* global AFRAME */
 
 if (typeof AFRAME === 'undefined') {
@@ -40,6 +37,25 @@ AFRAME.registerComponent('plot', {
     * Called once when component is attached. Generally for initial setup.
     */
     init: function() {
+        
+    },
+    
+    createPlot: function() {
+        if (this.graphObject !== null) {
+            this.root.remove(this.graphObject);
+        }
+        
+        this.graphObject = createGraphObject(this.F, this.data.order, this.bounds,
+                this.data.color, this.data.grid_x_scale, this.data.grid_y_scale,
+                this.data.show_grid);
+        this.root.add(this.graphObject);
+    },
+
+    /**
+    * Called when component is attached and when component data changes.
+    * Generally modifies the entity based on the data.
+    */
+    update: function (oldData) {
         var code = math.compile(this.data.function);
         var scope = {t: 0.0};
         this.scope = scope;
@@ -79,24 +95,9 @@ AFRAME.registerComponent('plot', {
         this.graphObject = null;
         this.createPlot();
         this.el.setObject3D('mesh', root);
-    },
-    
-    createPlot: function() {
-        if (this.graphObject !== null) {
-            this.root.remove(this.graphObject);
-        }
         
-        this.graphObject = createGraphObject(this.F, this.data.order, this.bounds,
-                this.data.color, this.data.grid_x_scale, this.data.grid_y_scale,
-                this.data.show_grid);
-        this.root.add(this.graphObject);
+        console.log(root);
     },
-
-    /**
-    * Called when component is attached and when component data changes.
-    * Generally modifies the entity based on the data.
-    */
-    //update: function (oldData) { },
 
     /**
     * Called when a component is removed (e.g., via removeAttribute).
@@ -229,8 +230,7 @@ function createGraphObject(valueFunction, order, bounds, color, gridXScale, grid
     //if (showGrid) {
     //    materialProperties.map = plotTexture;
     //}
-    var material = new THREE.MeshLambertMaterial(materialProperties);
-    
+    var material = new THREE.MeshPhongMaterial(materialProperties);
     material.side = THREE.DoubleSide;
     var result = new THREE.Mesh(geometry, material);
     return result;
