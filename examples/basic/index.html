@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>A-Frame Plot Component - Basic</title>
     <meta name="description" content="Basic example for Plot component."></meta>
-    <script src="https://aframe.io/releases/0.6.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/0.6.0/aframe.js"></script>
     <script src="../../dist/aframe-plot-component.js"></script>
   </head>
   <body>
@@ -14,7 +14,13 @@
         <img id="skyTexture" src="https://cdn.aframe.io/a-painter/images/sky.jpg">
       </a-assets>
 
-      <a-entity plot="function: e^(x+y^2) - 1.02; order: 32; show_zero_planes: true; show_bounding_box: false; bounds: -0.5 0.5 -0.5 0.5 -0.5 0.5" position="-0.5 1 -2" rotation="0 90 0"></a-entity>
+      <a-entity plot="function: e^(x+y^2) - 1.02; order: 32; show_zero_planes: true; show_bounding_box: false; bounds: -0.5 0.5 -0.5 0.5 -0.5 0.5; color: #04F"
+                position="-0.75 1 -2" rotation="0 90 0">
+      </a-entity>
+      
+      <a-entity plot="function: 0.5*e^-(((x^2)/(1.1+sin(2*pi*t))+(y^2)/(1.1+cos(2*pi*t)))*10); order: 32; show_zero_planes: true; show_bounding_box: false; bounds: -0.5 0.5 0 0.5 -0.5 0.5; color: #F40;"
+                position="0.75 1 -2" rotation="0 90 0">
+      </a-entity>
 
       <a-plane src="#groundTexture" rotation="-90 0 0" height="100" width="100"></a-plane>
       <a-light type="ambient" color="#445451"></a-light>
