@@ -66,7 +66,12 @@
 	        'show_axes': {'type': 'boolean', 'default': true},
 	        'bounds': {'type': 'string', 'default': '-1 1 -1 1 -1 1'},
 	        'show_zero_planes': {'type': 'boolean', 'default': false},
-	        'show_bounding_box': {'type': 'boolean', 'default': false}
+	        'show_bounding_box': {'type': 'boolean', 'default': false},
+	        'show_grid': {'type': 'boolean', 'default': true}, // TODO
+	        'grix_x_scale': {'type': 'number', 'default': 0.1}, // TODO
+	        'grid_z_scale': {'type': 'number', 'default': 0.1}, // TODO
+	        'color': {'type': 'string', 'default': '#AAA'},
+	        'animate': {'type': 'boolean', 'default': false}
 	    },
 	    
 	    /**
@@ -78,17 +83,42 @@
 	    * Called once when component is attached. Generally for initial setup.
 	    */
 	    init: function() {
+	        
+	    },
+	    
+	    createPlot: function() {
+	        if (this.graphObject !== null) {
+	            this.root.remove(this.graphObject);
+	        }
+	        
+	        this.graphObject = createGraphObject(this.F, this.data.order, this.bounds,
+	                this.data.color, this.data.grid_x_scale, this.data.grid_y_scale,
+	                this.data.show_grid);
+	        this.root.add(this.graphObject);
+	    },
+
+	    /**
+	    * Called when component is attached and when component data changes.
+	    * Generally modifies the entity based on the data.
+	    */
+	    update: function (oldData) {
 	        var code = math.compile(this.data.function);
-	        var F = function(i, j) {
-	            var scope = {'x': i, 'y': j};
+	        var scope = {t: 0.0};
+	        this.scope = scope;
+	        this.F = function(i, j) {
+	            scope.x = i;
+	            scope.y = j;
 	            return code.eval(scope);
 	        };
 	        
+	        console.log(this.data);
+	        
 	        var root = new THREE.Object3D();
+	        this.root = root;
 	        
 	        // TODO: make this more robust with format checking
 	        // [-x, +x, -y, +y, -z, +z]
-	        var bounds = this.data.bounds.split(' ').map(function(x) {
+	        this.bounds = this.data.bounds.split(' ').map(function(x) {
 	            return parseFloat(x);
 	        });
 	        
@@ -99,26 +129,21 @@
 	        }
 	        
 	        if (this.data.show_zero_planes === true) {
-	            var zeroPlanes = makeZeroPlanes(bounds);
+	            var zeroPlanes = makeZeroPlanes(this.bounds);
 	            root.add(zeroPlanes);
 	        }
 	        
 	        if (this.data.show_bounding_box === true) {
-	            var boundingBox = makeBoundingBox(bounds);
+	            var boundingBox = makeBoundingBox(this.bounds);
 	            root.add(boundingBox);
 	        }
 	        
-	        var graphObject = createGraphObject(F, this.data.order, bounds);
-	        root.add(graphObject);
-	        
+	        this.graphObject = null;
+	        this.createPlot();
 	        this.el.setObject3D('mesh', root);
-	    }
-
-	    /**
-	    * Called when component is attached and when component data changes.
-	    * Generally modifies the entity based on the data.
-	    */
-	    //update: function (oldData) { },
+	        
+	        console.log(root);
+	    },
 
 	    /**
 	    * Called when a component is removed (e.g., via removeAttribute).
@@ -129,7 +154,12 @@
 	    /**
 	    * Called on each scene tick.
 	    */
-	    // tick: function (t) { },
+	    tick: function (t) {
+	        if (this.data.animate) {
+	            this.scope.t = (t % 1000) / 1000;
+	            this.createPlot();
+	        }
+	    },
 
 	    /**
 	    * Called when entity pauses.
@@ -222,7 +252,7 @@
 	    return boundingBox;
 	}
 
-	function createGraphObject(valueFunction, order, bounds) {
+	function createGraphObject(valueFunction, order, bounds, color, gridXScale, gridZScale, showGrid) {
 	    
 	    var values = [];
 	    
@@ -240,13 +270,17 @@
 	        values.push(valueRow);
 	    }
 	    
-	    var geometry = new GraphBufferGeometry(order, bounds, values);
-	    var material = new THREE.MeshLambertMaterial({color: 0xFFFFFF});
+	    var geometry = new GraphBufferGeometry(order, bounds, values, gridXScale, gridZScale);
+	    
+	    const materialProperties = {color: new THREE.Color(color)};
+	    //if (showGrid) {
+	    //    materialProperties.map = plotTexture;
+	    //}
+	    var material = new THREE.MeshPhongMaterial(materialProperties);
 	    material.side = THREE.DoubleSide;
 	    var result = new THREE.Mesh(geometry, material);
 	    return result;
-	    
-	    // TODO: BOUNDS
+
 	}
 
 
@@ -314,7 +348,10 @@
 /* 2 */
 /***/ (function(module, exports) {
 
-	function GraphBufferGeometry(order, bounds, values) {
+	function GraphBufferGeometry(order, bounds, values, uScale, vScale) {
+	    
+	    THREE.BufferGeometry.call(this);
+	    
 	    this.order = order;
 	    
 	    this.values = values;
@@ -325,9 +362,17 @@
 	    
 	    var vertices = new Float32Array(numFloats);
 	    var normals = new Float32Array(numFloats);
+	    var uvs = new Float32Array(numVertices * 2);
 	    
 	    var faceIndex = 0;
 	    var normalIndex = 0;
+	    var uvIndex = 0;
+	    
+	    function addValues(vertex, normal, i, j) {
+	        addVertex(vertex);
+	        addNormal(normal);
+	        addUV(vertex.x, vertex.z);
+	    }
 	    
 	    function addVertex(V) {
 	        vertices[faceIndex++] = V.x;
@@ -339,6 +384,11 @@
 	        normals[normalIndex++] = N.x;
 	        normals[normalIndex++] = N.y;
 	        normals[normalIndex++] = N.z;
+	    }
+	    
+	    function addUV(x, z) {
+	        uvs[uvIndex++] = x / uScale;
+	        uvs[uvIndex++] = z / vScale;
 	    }
 	    
 	    function getNormalVector(A, B, C) {
@@ -371,9 +421,9 @@
 	            
 	            var normal = getNormalVector(A, B, C);
 	            
-	            addVertex(A); addNormal(normal);
-	            addVertex(B); addNormal(normal);
-	            addVertex(C); addNormal(normal);
+	            addValues(A, normal, i, j + 1);
+	            addValues(B, normal, i + 1, j);
+	            addValues(C, normal, i, j);
 	            
 	            A = new THREE.Vector3(x + xStep, valuePlusX, z);
 	            B = new THREE.Vector3(x, valuePlusZ, z + zStep);
@@ -381,19 +431,22 @@
 
 	            normal = getNormalVector(A, B, C);
 	            
-	            addVertex(A); addNormal(normal);
-	            addVertex(B); addNormal(normal);
-	            addVertex(C); addNormal(normal);
+	            addValues(A, normal, i + 1, j);
+	            addValues(B, normal, i, j + 1);
+	            addValues(C, normal, i + 1, j + 1);
+	            
 	        }
 	    }
 	    
 	    function freeAttributeArray() { this.array = null; }
 	    
 	    this.addAttribute('position', new THREE.BufferAttribute(vertices, 3).onUpload(freeAttributeArray));
+	    this.addAttribute('uv', new THREE.BufferAttribute(uvs, 2).onUpload(freeAttributeArray));
 	    this.computeVertexNormals();
 	}
 
-	GraphBufferGeometry.prototype = new THREE.BufferGeometry();
+	GraphBufferGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
+	GraphBufferGeometry.prototype.constructor = GraphBufferGeometry;
 
 	module.exports = GraphBufferGeometry;
 
