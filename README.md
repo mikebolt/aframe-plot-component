@@ -7,6 +7,8 @@
 
 Renders 3D plots of functions and data
 
+[Check out the example here!](https://mikebolt.github.io/aframe-plot-component/)
+
 For [A-Frame](https://aframe.io).
 
 ### API
